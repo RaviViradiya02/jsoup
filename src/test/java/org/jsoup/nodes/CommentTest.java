@@ -41,14 +41,15 @@ public class CommentTest {
         assertEquals("<!-- a simple comment -->", c1.outerHtml());
     }
 
-    @Test void stableIndentInBlock() {
+    @Test
+    public void stableIndentInBlock() {
         String html = "<div><!-- comment --> Text</div><p><!-- comment --> Text</p>";
         Document doc = Jsoup.parse(html);
         String out = doc.body().html();
         assertEquals("<div>\n" +
-            " <!-- comment --> Text\n" +
-            "</div>\n" +
-            "<p><!-- comment --> Text</p>", out);
+                " <!-- comment --> Text\n" +
+                "</div>\n" +
+                "<p><!-- comment --> Text</p>", out);
 
         Document doc2 = Jsoup.parse(out);
         String out2 = doc2.body().html();
@@ -57,12 +58,19 @@ public class CommentTest {
 
     @Test
     public void testClone() {
-        Comment c1 = comment.clone();
-        assertNotSame(comment, c1);
-        assertEquals(comment.getData(), comment.getData());
-        c1.setData("New");
-        assertEquals("New", c1.getData());
-        assertNotEquals(c1.getData(), comment.getData());
+        // Create a comment to test cloning
+        Comment comment = new Comment(" This is one heck of a comment! ");
+
+        // Clone the comment
+        Comment clonedComment = comment.clone();
+
+        // Assertions
+        assertNotSame(comment, clonedComment); // Ensure clone is a different instance
+        assertEquals(comment.getData(), clonedComment.getData()); // Check data integrity
+
+        // Modify the clone and ensure original is not affected
+        clonedComment.setData("Modified comment");
+        assertNotEquals(comment.getData(), clonedComment.getData());
     }
 
     @Test
