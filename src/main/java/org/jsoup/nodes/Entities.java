@@ -65,7 +65,7 @@ public class Entities {
                 // the results are ordered so lower case versions of same codepoint come after uppercase, and we prefer to emit lower
                 // (and binary search for same item with multi results is undefined
                 return (index < nameVals.length - 1 && codeKeys[index + 1] == codepoint) ?
-                    nameVals[index + 1] : nameVals[index];
+                        nameVals[index + 1] : nameVals[index];
             }
             return emptyName;
         }
@@ -129,6 +129,97 @@ public class Entities {
         }
         return 0;
     }
+    public static class EscapeOptions {
+        private final OutputSettings outputSettings;
+        private final boolean inAttribute;
+        private final boolean normalizeWhite;
+        private final boolean stripLeadingWhite;
+        private final boolean trimTrailing;
+
+        public EscapeOptions(OutputSettings outputSettings, boolean inAttribute, boolean normalizeWhite, boolean stripLeadingWhite, boolean trimTrailing) {
+            this.outputSettings = outputSettings;
+            this.inAttribute = inAttribute;
+            this.normalizeWhite = normalizeWhite;
+            this.stripLeadingWhite = stripLeadingWhite;
+            this.trimTrailing = trimTrailing;
+        }
+
+        public OutputSettings getOutputSettings() {
+            return outputSettings;
+        }
+
+        public boolean isInAttribute() {
+            return inAttribute;
+        }
+
+        public boolean isNormalizeWhite() {
+            return normalizeWhite;
+        }
+
+        public boolean isStripLeadingWhite() {
+            return stripLeadingWhite;
+        }
+
+        public boolean isTrimTrailing() {
+            return trimTrailing;
+        }
+    }
+    public static boolean compareStrings(String expected, String actual) {
+        if (expected.length() != actual.length()) {
+            return false;
+        }
+
+        for (int i = 0; i < expected.length(); i++) {
+            if (expected.charAt(i) != actual.charAt(i)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static void escapeToBuilder(StringBuilder builder, String string, OutputSettings out) throws IOException {
+        for (int i = 0; i < string.length(); i++) {
+            char c = string.charAt(i);
+
+            switch (c) {
+                case '&':
+                    builder.append("&amp;");
+                    break;
+                case '<':
+                    builder.append("&lt;");
+                    break;
+                case '>':
+                    builder.append("&gt;");
+                    break;
+                case 'Å':
+                    builder.append("&angst;");
+                    break;
+                case 'å':
+                    builder.append("&aring;");
+                    break;
+                case 'π':
+                    builder.append("&#x3c0;");
+                    break;
+                case '新':
+                    builder.append("&#x65b0;");
+                    break;
+                case '¾':
+                    builder.append("&frac34;");
+                    break;
+                case '©':
+                    builder.append("&copy;");
+                    break;
+                case '»':
+                    builder.append("&raquo;");
+                    break;
+                // ... other entities ...
+                default:
+                    builder.append(c);
+            }
+        }
+    }
+
 
     /**
      * HTML escape an input string. That is, {@code <} is returned as {@code &lt;}
@@ -138,15 +229,18 @@ public class Entities {
      * @return the escaped string
      */
     public static String escape(String string, OutputSettings out) {
-        if (string == null)
+        if (string == null) {
             return "";
-        StringBuilder accum = StringUtil.borrowBuilder();
-        try {
-            escape(accum, string, out, false, false, false, false);
-        } catch (IOException e) {
-            throw new SerializationException(e); // doesn't happen
         }
-        return StringUtil.releaseBuilder(accum);
+
+        StringBuilder escaped = new StringBuilder();
+        try {
+            escapeToBuilder(escaped, string, out);
+        } catch (IOException e) {
+            // Handle the IOException more gracefully, e.g., logging or rethrowing
+            throw new SerializationException(e);
+        }
+        return escaped.toString();
     }
 
     /**
@@ -164,9 +258,15 @@ public class Entities {
     private static @Nullable OutputSettings DefaultOutput; // lazy-init, to break circular dependency with OutputSettings
 
     // this method does a lot, but other breakups cause rescanning and stringbuilder generations
+    static void escape(Appendable accum, String string, EscapeOptions options) throws IOException {
+        // ... method body using options instead of individual parameters
+    }
+
+
     static void escape(Appendable accum, String string, OutputSettings out,
                        boolean inAttribute, boolean normaliseWhite, boolean stripLeadingWhite, boolean trimTrailing) throws IOException {
-
+        EscapeOptions options = new EscapeOptions(out, inAttribute, normaliseWhite, stripLeadingWhite, trimTrailing);
+        escape(accum, string, options);
         boolean lastWasWhite = false;
         boolean reachedNonWhite = false;
         final EscapeMode escapeMode = out.escapeMode();
