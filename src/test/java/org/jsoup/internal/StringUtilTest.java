@@ -102,14 +102,16 @@ public class StringUtilTest {
         assertEquals("hello there", normaliseWhitespace("hello\nthere"));
     }
 
-    @Test public void normaliseWhiteSpaceHandlesHighSurrogates() {
-        String test71540chars = "\ud869\udeb2\u304b\u309a  1";
-        String test71540charsExpectedSingleWhitespace = "\ud869\udeb2\u304b\u309a 1";
+    @Test
+    public void testNormalizeWhitespaceWithHighSurrogates() {
+        String input = "\ud869\udeb2\u304b\u309a  1";
+        String expected = "\ud869\udeb2\u304b\u309a 1";
 
-        assertEquals(test71540charsExpectedSingleWhitespace, normaliseWhitespace(test71540chars));
-        String extractedText = Jsoup.parse(test71540chars).text();
-        assertEquals(test71540charsExpectedSingleWhitespace, extractedText);
+        assertEquals(expected, normaliseWhitespace(input));
+        String parsedText = Jsoup.parse(input).text();
+        assertEquals(expected, parsedText);
     }
+
 
     @Test public void resolvesRelativeUrls() {
         assertEquals("http://example.com/one/two?three", resolve("http://example.com", "./one/two?three"));
